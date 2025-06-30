@@ -1,0 +1,39 @@
+bin/
+*.log
+.env
+coverage.out
+coverage.html
+.DS_Store
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Node modules (if any)
+node_modules/
+
+# Go sum files
+go.sum
+
+# Air tmp files
+tmp/
