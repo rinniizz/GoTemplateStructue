@@ -1,6 +1,6 @@
 # Go Template Structure
 
-เทมเพลตโครงสร้าง Golang แบบ E## ⚡ Quick Start
+เทมเพลตโครงสร้าง Golang แบบ Clean Architecture ⚡ Quick Start
 
 ### 🔥 Development Mode (แนะนำ)
 
