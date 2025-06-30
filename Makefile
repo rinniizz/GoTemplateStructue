@@ -11,23 +11,100 @@ run:
 
 # Run with hot reload (requires Air)
 dev:
-	@echo "🔥 Starting development server with hot reload..."
-	air
+	@echo "🧑‍💻 Starting development mode..."
+	@echo "📝 Generating Swagger docs..."
+	@if command -v swag >/dev/null 2>&1; then \
+		swag init --generalInfo cmd/server/main.go --dir ./ --output docs --parseGoList=false; \
+		echo "✅ Swagger docs generated!"; \
+	else \
+		echo "⚠️ swag not found, installing..."; \
+		go install github.com/swaggo/swag/cmd/swag@latest; \
+		swag init --generalInfo cmd/server/main.go --dir ./ --output docs --parseGoList=false; \
+		echo "✅ Swagger docs generated!"; \
+	fi
+	@if command -v air >/dev/null 2>&1; then \
+		echo "🔥 Using Air for hot reload..."; \
+		if [ ! -f .air.toml ]; then \
+			echo "📝 Creating .air.toml..."; \
+			echo 'root = "."' > .air.toml; \
+			echo 'testdata_dir = "testdata"' >> .air.toml; \
+			echo 'tmp_dir = "tmp"' >> .air.toml; \
+			echo '' >> .air.toml; \
+			echo '[build]' >> .air.toml; \
+			echo '  args_bin = []' >> .air.toml; \
+			echo '  bin = "./tmp/main"' >> .air.toml; \
+			echo '  cmd = "go build -o ./tmp/main ./cmd/server/main.go"' >> .air.toml; \
+			echo '  delay = 1000' >> .air.toml; \
+			echo '  exclude_dir = ["assets", "tmp", "vendor", "testdata", "docs", ".git"]' >> .air.toml; \
+			echo '  exclude_file = []' >> .air.toml; \
+			echo '  exclude_regex = ["_test.go"]' >> .air.toml; \
+			echo '  exclude_unchanged = false' >> .air.toml; \
+			echo '  follow_symlink = false' >> .air.toml; \
+			echo '  full_bin = ""' >> .air.toml; \
+			echo '  include_dir = []' >> .air.toml; \
+			echo '  include_ext = ["go", "tpl", "tmpl", "html"]' >> .air.toml; \
+			echo '  include_file = []' >> .air.toml; \
+			echo '  kill_delay = "0s"' >> .air.toml; \
+			echo '  log = "build-errors.log"' >> .air.toml; \
+			echo '  poll = false' >> .air.toml; \
+			echo '  poll_interval = 0' >> .air.toml; \
+			echo '  rerun = false' >> .air.toml; \
+			echo '  rerun_delay = 500' >> .air.toml; \
+			echo '  send_interrupt = false' >> .air.toml; \
+			echo '  stop_on_root = false' >> .air.toml; \
+		fi; \
+		echo "🚀 Starting server with Hot Reload..."; \
+		echo "📍 Server: http://localhost:8080"; \
+		echo "📚 Swagger UI: http://localhost:8080/swagger/index.html"; \
+		echo "🏥 Health Check: http://localhost:8080/health"; \
+		echo "🔄 Auto-restart enabled - changes will trigger rebuild"; \
+		echo "💡 Press Ctrl+C to stop"; \
+		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug air; \
+	elif command -v nodemon >/dev/null 2>&1; then \
+		echo "🔄 Using nodemon for file watching..."; \
+		echo "🚀 Starting server with File Watching..."; \
+		echo "📍 Server: http://localhost:8080"; \
+		echo "📚 Swagger UI: http://localhost:8080/swagger/index.html"; \
+		echo "🏥 Health Check: http://localhost:8080/health"; \
+		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug nodemon --exec "go run cmd/server/main.go" --ext go --watch cmd --watch internal --watch pkg --delay 2; \
+	else \
+		echo "⚠️  No hot reload tool found. Installing Air..."; \
+		go install github.com/cosmtrek/air@latest; \
+		echo "🔄 Please run 'make dev' again to use hot reload"; \
+		echo "💡 Or install nodemon: npm install -g nodemon"; \
+		echo "🔧 Starting in simple development mode..."; \
+		echo "📍 Server: http://localhost:8080"; \
+		echo "📚 Swagger UI: http://localhost:8080/swagger/index.html"; \
+		echo "🏥 Health Check: http://localhost:8080/health"; \
+		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug go run $(MAIN_PATH)/main.go; \
+	fi
 
 # Run in mock mode (no database required)
 mock:
-	@echo "🔧 Starting in MOCK MODE - no database required..."
+	@echo "🔧 Starting in mock mode - no database required..."
 	MOCK_MODE=true go run $(MAIN_PATH)/main.go
 
 # Run in mock mode for Windows
 mock-win:
-	@echo "🔧 Starting in MOCK MODE - no database required..."
+	@echo "🔧 Starting in mock mode - no database required..."
 	set MOCK_MODE=true && go run $(MAIN_PATH)/main.go
 
 # Build the application
 build:
 	@echo "🔨 Building the application..."
+	@echo "📝 Generating Swagger docs..."
+	@if command -v swag >/dev/null 2>&1; then \
+		swag init --generalInfo cmd/server/main.go --dir ./ --output docs --parseGoList=false; \
+		echo "✅ Swagger docs generated!"; \
+	else \
+		echo "⚠️ swag not found, installing..."; \
+		go install github.com/swaggo/swag/cmd/swag@latest; \
+		swag init --generalInfo cmd/server/main.go --dir ./ --output docs --parseGoList=false; \
+		echo "✅ Swagger docs generated!"; \
+	fi
+	@echo "🔨 Building binary..."
 	go build -o bin/$(BINARY_NAME) $(MAIN_PATH)
+	@echo "✅ Build completed: bin/$(BINARY_NAME)"
 
 # Run tests
 test:
@@ -48,7 +125,7 @@ lint:
 # Generate swagger documentation
 swagger:
 	@echo "📚 Generating Swagger documentation..."
-	swag init -g cmd/server/main.go -o api/swagger
+	swag init --generalInfo cmd/server/main.go --dir ./ --output docs --parseGoList=false
 
 # Clean build artifacts
 clean:
@@ -72,11 +149,11 @@ deps:
 # Run database migrations (requires migrate tool)
 migrate-up:
 	@echo "⬆️ Running database migrations..."
-	migrate -path scripts/migrations -database "postgresql://postgres:password@localhost:5432/gotemplate?sslmode=disable" up
+	migrate -path migrations -database "postgresql://postgres:password@localhost:5432/gotemplate?sslmode=disable" up
 
 migrate-down:
 	@echo "⬇️ Reverting database migrations..."
-	migrate -path scripts/migrations -database "postgresql://postgres:password@localhost:5432/gotemplate?sslmode=disable" down
+	migrate -path migrations -database "postgresql://postgres:password@localhost:5432/gotemplate?sslmode=disable" down
 
 # Docker commands
 docker-build:

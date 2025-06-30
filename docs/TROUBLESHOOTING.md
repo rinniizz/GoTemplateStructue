@@ -67,8 +67,8 @@ go mod download
 
 **วิธีแก้:**
 ```bash
-chmod +x scripts/*.sh
-sudo ./scripts/build.sh
+chmod +x *.sh
+sudo ./build.sh
 ```
 
 ### 7. Swagger UI Not Working

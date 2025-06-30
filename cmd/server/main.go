@@ -19,10 +19,11 @@ import (
 	"go-template-structure/pkg/database"
 	"go-template-structure/pkg/logger"
 
+	_ "go-template-structure/docs" // swagger docs
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	_ "go-template-structure/docs" // swagger docs
 )
 
 // @title Go Template API
