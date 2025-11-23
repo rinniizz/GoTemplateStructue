@@ -9,12 +9,13 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig   `mapstructure:"server"`
-	Database  DatabaseConfig `mapstructure:"database"`
-	Redis     RedisConfig    `mapstructure:"redis"`
-	JWT       JWTConfig      `mapstructure:"jwt"`
-	LogLevel  string         `mapstructure:"log_level"`
-	LogFormat string         `mapstructure:"log_format"`
+	Server    ServerConfig    `mapstructure:"server"`
+	Database  DatabaseConfig  `mapstructure:"database"`
+	Redis     RedisConfig     `mapstructure:"redis"`
+	JWT       JWTConfig       `mapstructure:"jwt"`
+	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
+	LogLevel  string          `mapstructure:"log_level"`
+	LogFormat string          `mapstructure:"log_format"`
 }
 
 type ServerConfig struct {
@@ -42,6 +43,11 @@ type RedisConfig struct {
 type JWTConfig struct {
 	Secret     string        `mapstructure:"secret"`
 	Expiration time.Duration `mapstructure:"expiration"`
+}
+
+type RateLimitConfig struct {
+	RPS   int `mapstructure:"rps"`   // Requests per second
+	Burst int `mapstructure:"burst"` // Maximum burst size
 }
 
 func Load() (*Config, error) {
@@ -104,6 +110,10 @@ func setDefaults() {
 	viper.SetDefault("jwt.secret", "your-super-secret-jwt-key")
 	viper.SetDefault("jwt.expiration", 24*time.Hour)
 
+	// Rate limit defaults
+	viper.SetDefault("rate_limit.rps", 10)
+	viper.SetDefault("rate_limit.burst", 20)
+
 	// Logging defaults
 	viper.SetDefault("log_level", "info")
 	viper.SetDefault("log_format", "json")
@@ -130,6 +140,10 @@ func bindEnvVars() {
 
 	// JWT
 	viper.BindEnv("jwt.secret", "JWT_SECRET")
+
+	// Rate Limit
+	viper.BindEnv("rate_limit.rps", "RATE_LIMIT_RPS")
+	viper.BindEnv("rate_limit.burst", "RATE_LIMIT_BURST")
 
 	// Logging
 	viper.BindEnv("log_level", "LOG_LEVEL")

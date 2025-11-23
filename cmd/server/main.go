@@ -22,6 +22,7 @@ import (
 	_ "go-template-structure/docs" // swagger docs
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -112,10 +113,18 @@ func setupRouter(cfg *config.Config, userHandler *handler.UserHandler, authHandl
 
 	router := gin.New()
 
-	// Middlewares
-	router.Use(middleware.Logger())
-	router.Use(middleware.Recovery())
-	router.Use(middleware.CORS())
+	// Start rate limiter cleanup routine
+	middleware.CleanupVisitors()
+
+	// Security Middlewares (ordered by priority)
+	router.Use(middleware.RequestID())                                         // 1. Request tracking
+	router.Use(middleware.PrometheusMetrics())                                 // 2. Prometheus metrics collection
+	router.Use(middleware.SecurityHeaders())                                   // 3. Security headers (XSS, Clickjacking protection)
+	router.Use(middleware.RateLimiter(cfg.RateLimit.RPS, cfg.RateLimit.Burst)) // 4. Rate limiting (configurable)
+	router.Use(middleware.CORS())                                              // 5. CORS policy
+	router.Use(middleware.Logger())                                            // 6. Request/Response logging
+	router.Use(middleware.AuditLog())                                          // 7. Security audit logging
+	router.Use(middleware.Recovery())                                          // 8. Panic recovery
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -125,6 +134,9 @@ func setupRouter(cfg *config.Config, userHandler *handler.UserHandler, authHandl
 			"time":    time.Now().UTC(),
 		})
 	})
+
+	// Prometheus metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
