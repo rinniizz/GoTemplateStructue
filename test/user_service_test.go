@@ -92,7 +92,7 @@ func TestUserService_GetProfile(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockRedis := new(MockRedisInterface)
 	jwtConfig := config.JWTConfig{Secret: "test-secret", Expiration: 24 * time.Hour}
-	
+
 	userService := service.NewUserService(mockRepo, mockRedis, jwtConfig)
 
 	testUser := &domain.User{
@@ -131,7 +131,7 @@ func TestUserService_GetUsers(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockRedis := new(MockRedisInterface)
 	jwtConfig := config.JWTConfig{Secret: "test-secret", Expiration: 24 * time.Hour}
-	
+
 	userService := service.NewUserService(mockRepo, mockRedis, jwtConfig)
 
 	testUsers := []domain.User{
@@ -169,7 +169,7 @@ func TestUserService_DeleteUser(t *testing.T) {
 	mockRepo := new(MockUserRepository)
 	mockRedis := new(MockRedisInterface)
 	jwtConfig := config.JWTConfig{Secret: "test-secret", Expiration: 24 * time.Hour}
-	
+
 	userService := service.NewUserService(mockRepo, mockRedis, jwtConfig)
 
 	t.Run("Success", func(t *testing.T) {
