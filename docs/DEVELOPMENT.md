@@ -19,9 +19,9 @@ make dev
 **Features ที่ได้:**
 - �🔥 Hot reload (Air)
 - 📚 Auto-generate Swagger docs
-- 🔧 Mock mode enabled
-- 🐛 Debug logging
-- 📍 Server: http://localhost:8080
+-  Debug logging
+- �️ ใช้ PostgreSQL/Redis จริง
+- �📍 Server: http://localhost:8080
 - 📖 Swagger UI: http://localhost:8080/swagger/index.html
 
 ## 📚 Auto Swagger Generation
@@ -105,7 +105,6 @@ make run
 เมื่อรันใน Development Mode จะมีการตั้งค่าดังนี้:
 
 ```bash
-MOCK_MODE=true          # ใช้ Mock repositories
 GIN_MODE=debug          # Debug mode สำหรับ Gin
 SERVER_PORT=8080        # Port ของเซิร์ฟเวอร์
 LOG_LEVEL=debug         # Log level แบบละเอียด
@@ -113,21 +112,16 @@ LOG_LEVEL=debug         # Log level แบบละเอียด
 
 ### Features ใน Development Mode
 
-1. **🔧 Mock Mode**
-   - ไม่ต้องมี PostgreSQL หรือ Redis
-   - ใช้ข้อมูลจำลองในหน่วยความจำ
-   - ทดสอบได้ทันที
-
-2. **📝 Debug Logging**
+1. **📝 Debug Logging**
    - แสดง request/response details
    - Error stack traces ละเอียด
    - Performance metrics
 
-3. **🔄 CORS Enabled**
+2. **🔄 CORS Enabled**
    - เรียก API จาก frontend development server ได้
    - รองรับ localhost หลาย port
 
-4. **📚 Auto Swagger Generation**
+3. **📚 Auto Swagger Generation**
    - Generate swagger docs ใหม่ทุกครั้งที่เริ่มต้น
    - อัปเดตทันทีเมื่อแก้ไข API comments
 
@@ -198,7 +192,6 @@ make swagger         # Linux/Mac
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/server",
             "env": {
-                "MOCK_MODE": "true",
                 "GIN_MODE": "debug",
                 "LOG_LEVEL": "debug"
             },
@@ -269,21 +262,20 @@ go tool cover -html=coverage.out
 ### 1. .env.example
 ```bash
 # Development environment
-MOCK_MODE=true
 SERVER_HOST=localhost
 SERVER_PORT=8080
 GIN_MODE=debug
 LOG_LEVEL=debug
 JWT_SECRET=dev-secret-key
 
-# Database (ถ้าไม่ใช้ mock)
+# Database
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
 DB_PASSWORD=password
 DB_NAME=gotemplate_dev
 
-# Redis (ถ้าไม่ใช้ mock)
+# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=

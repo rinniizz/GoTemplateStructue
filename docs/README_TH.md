@@ -30,10 +30,8 @@
 │   ├── utils/           # Utility functions
 │   ├── logger/          # Logging package
 │   └── database/        # Database connections
-├── api/swagger/         # API documentation
 ├── test/                # Test files
-├── scripts/             # Build scripts
-└── docs/                # Documentation
+└── docs/                # Documentation & Swagger output
 ```
 
 ## 🚀 เริ่มต้นใช้งาน

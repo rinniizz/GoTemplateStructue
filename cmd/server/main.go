@@ -12,8 +12,8 @@ import (
 
 	"go-template-structure/internal/config"
 	"go-template-structure/internal/handler"
+	"go-template-structure/internal/interfaces"
 	"go-template-structure/internal/middleware"
-	"go-template-structure/internal/mock"
 	"go-template-structure/internal/repository"
 	"go-template-structure/internal/service"
 	"go-template-structure/pkg/database"
@@ -57,40 +57,21 @@ func main() {
 	logger.Init(cfg.LogLevel, cfg.LogFormat)
 	logger.Info("Starting application...")
 
-	// Check if we should use mock mode (when DB connection fails or MOCK_MODE=true)
-	useMockMode := os.Getenv("MOCK_MODE") == "true"
-
-	var userRepo repository.UserRepository
-	var redisClient interface{}
-
-	if !useMockMode {
-		// Try to initialize real database
-		db, err := database.NewPostgresConnection(cfg.Database)
-		if err != nil {
-			logger.Warn("Failed to connect to database, using mock mode:", err)
-			useMockMode = true
-		} else {
-			userRepo = repository.NewUserRepository(db)
-			logger.Info("Connected to PostgreSQL database")
-		}
-
-		// Try to initialize Redis
-		if !useMockMode {
-			redisClient, err = database.NewRedisConnection(cfg.Redis)
-			if err != nil {
-				logger.Warn("Failed to connect to Redis, using mock client:", err)
-				redisClient = mock.NewMockRedisClient()
-			} else {
-				logger.Info("Connected to Redis")
-			}
-		}
+	// Initialize primary database connection (required)
+	db, err := database.NewPostgresConnection(cfg.Database)
+	if err != nil {
+		logger.Fatal("Failed to connect to database:", err)
 	}
+	userRepo := repository.NewUserRepository(db)
+	logger.Info("Connected to PostgreSQL database")
 
-	// Use mock mode if needed
-	if useMockMode {
-		logger.Info("🔧 Running in MOCK MODE - no database required")
-		userRepo = mock.NewMockUserRepository()
-		redisClient = mock.NewMockRedisClient()
+	// Initialize Redis cache (optional but recommended)
+	var redisClient interfaces.RedisInterface
+	if client, err := database.NewRedisConnection(cfg.Redis); err != nil {
+		logger.Warn("Failed to connect to Redis, caching disabled:", err)
+	} else {
+		redisClient = client
+		logger.Info("Connected to Redis")
 	}
 
 	// Initialize services
@@ -102,7 +83,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(authService)
 
 	// Setup router
-	router := setupRouter(cfg, userHandler, authHandler, useMockMode)
+	router := setupRouter(cfg, userHandler, authHandler)
 
 	// Setup server
 	srv := &http.Server{
@@ -112,12 +93,7 @@ func main() {
 
 	// Start server in goroutine
 	go func() {
-		mode := "PRODUCTION"
-		if useMockMode {
-			mode = "MOCK"
-		}
-
-		logger.Info(fmt.Sprintf("🚀 Server is running on %s:%s (%s MODE)", cfg.Server.Host, cfg.Server.Port, mode))
+		logger.Info(fmt.Sprintf("🚀 Server is running on %s:%s", cfg.Server.Host, cfg.Server.Port))
 		logger.Info("📚 Swagger UI: http://localhost:" + cfg.Server.Port + "/swagger/index.html")
 		logger.Info("🏥 Health Check: http://localhost:" + cfg.Server.Port + "/health")
 
@@ -130,7 +106,7 @@ func main() {
 	gracefulShutdown(srv)
 }
 
-func setupRouter(cfg *config.Config, userHandler *handler.UserHandler, authHandler *handler.AuthHandler, mockMode bool) *gin.Engine {
+func setupRouter(cfg *config.Config, userHandler *handler.UserHandler, authHandler *handler.AuthHandler) *gin.Engine {
 	// Set Gin mode
 	gin.SetMode(cfg.Server.GinMode)
 
@@ -143,16 +119,9 @@ func setupRouter(cfg *config.Config, userHandler *handler.UserHandler, authHandl
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
-		status := "ok"
-		mode := "production"
-		if mockMode {
-			mode = "mock"
-		}
-
 		c.JSON(http.StatusOK, gin.H{
-			"status":  status,
-			"mode":    mode,
-			"message": fmt.Sprintf("Server is running in %s mode", mode),
+			"status":  "ok",
+			"message": fmt.Sprintf("Server is running in %s mode", cfg.Server.GinMode),
 			"time":    time.Now().UTC(),
 		})
 	})

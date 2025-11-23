@@ -32,9 +32,6 @@ c:\git\GoTemplateStructue\
 │   │   ├── auth.go             # JWT validation
 │   │   ├── cors.go             # CORS configuration
 │   │   └── logger.go           # Request logging
-│   └── mock/                   # 🎭 Mock Implementations
-│       ├── user_service.go     # Mock user service
-│       └── auth_service.go     # Mock auth service
 ├── pkg/                        # 📦 Public Libraries
 │   ├── utils/                  # 🔧 Utility Functions
 │   │   ├── response.go         # Standard API responses
@@ -513,158 +510,21 @@ func (h *Handler) SetupRoutes() *gin.Engine {
 }
 ```
 
-#### 1.7 สร้าง Mock Implementation
-```go
-// internal/mock/product_service.go
-package mock
-
-import (
-    "errors"
-    "your-project/internal/domain"
-    "your-project/internal/interfaces"
-)
-
-type mockProductService struct {
-    products map[uint]*domain.Product
-    nextID   uint
-}
-
-func NewMockProductService() interfaces.ProductService {
-    return &mockProductService{
-        products: make(map[uint]*domain.Product),
-        nextID:   1,
-    }
-}
-
-func (m *mockProductService) CreateProduct(req *domain.CreateProductRequest) (*domain.Product, error) {
-    product := &domain.Product{
-        ID:          m.nextID,
-        Name:        req.Name,
-        Description: req.Description,
-        Price:       req.Price,
-        CategoryID:  req.CategoryID,
-    }
-    
-    m.products[m.nextID] = product
-    m.nextID++
-    
-    return product, nil
-}
-
-func (m *mockProductService) GetProduct(id uint) (*domain.Product, error) {
-    product, exists := m.products[id]
-    if !exists {
-        return nil, errors.New("product not found")
-    }
-    return product, nil
-}
-
-func (m *mockProductService) GetProducts(limit, offset int) ([]*domain.Product, error) {
-    var products []*domain.Product
-    count := 0
-    skipped := 0
-    
-    for _, product := range m.products {
-        if skipped < offset {
-            skipped++
-            continue
-        }
-        if count >= limit {
-            break
-        }
-        products = append(products, product)
-        count++
-    }
-    
-    return products, nil
-}
-
-func (m *mockProductService) UpdateProduct(id uint, req *domain.UpdateProductRequest) (*domain.Product, error) {
-    product, exists := m.products[id]
-    if !exists {
-        return nil, errors.New("product not found")
-    }
-    
-    if req.Name != nil {
-        product.Name = *req.Name
-    }
-    if req.Description != nil {
-        product.Description = *req.Description
-    }
-    if req.Price != nil {
-        product.Price = *req.Price
-    }
-    if req.CategoryID != nil {
-        product.CategoryID = *req.CategoryID
-    }
-    
-    return product, nil
-}
-
-func (m *mockProductService) DeleteProduct(id uint) error {
-    _, exists := m.products[id]
-    if !exists {
-        return errors.New("product not found")
-    }
-    
-    delete(m.products, id)
-    return nil
-}
-
-func (m *mockProductService) GetProductsByCategory(categoryID uint, limit, offset int) ([]*domain.Product, error) {
-    var products []*domain.Product
-    count := 0
-    skipped := 0
-    
-    for _, product := range m.products {
-        if product.CategoryID != categoryID {
-            continue
-        }
-        if skipped < offset {
-            skipped++
-            continue
-        }
-        if count >= limit {
-            break
-        }
-        products = append(products, product)
-        count++
-    }
-    
-    return products, nil
-}
-```
-
-#### 1.8 เพิ่มใน Dependency Injection
+#### 1.7 เพิ่มใน Dependency Injection
 ```go
 // cmd/server/main.go (อัปเดต)
 func main() {
     // ...existing code...
 
-    if mockMode {
-        // Mock services
-        productService := mock.NewMockProductService()
-        
-        // Initialize handler with mock services
-        handler := handler.NewHandler(
-            userService,
-            authService,
-            productService, // เพิ่มใหม่
-            authMiddleware,
-        )
-    } else {
-        // Real services
-        productRepo := repository.NewProductRepository(db)
-        productService := service.NewProductService(productRepo)
-        
-        // Initialize handler with real services
-        handler := handler.NewHandler(
-            userService,
-            authService,
-            productService, // เพิ่มใหม่
-            authMiddleware,
-        )
-    }
+    productRepo := repository.NewProductRepository(db)
+    productService := service.NewProductService(productRepo)
+
+    handler := handler.NewHandler(
+        userService,
+        authService,
+        productService, // เพิ่มใหม่
+        authMiddleware,
+    )
 
     // ...existing code...
 }
@@ -764,6 +624,7 @@ package integration
 import (
     "bytes"
     "encoding/json"
+    "errors"
     "net/http"
     "net/http/httptest"
     "testing"
@@ -772,14 +633,109 @@ import (
     "github.com/stretchr/testify/assert"
     "your-project/internal/domain"
     "your-project/internal/handler"
-    "your-project/internal/mock"
 )
+
+type inMemoryProductService struct {
+    data  map[uint]*domain.Product
+    nextID uint
+}
+
+func newInMemoryProductService() *inMemoryProductService {
+    return &inMemoryProductService{
+        data:  make(map[uint]*domain.Product),
+        nextID: 1,
+    }
+}
+
+func (s *inMemoryProductService) CreateProduct(req *domain.CreateProductRequest) (*domain.Product, error) {
+    product := &domain.Product{
+        ID:          s.nextID,
+        Name:        req.Name,
+        Description: req.Description,
+        Price:       req.Price,
+        CategoryID:  req.CategoryID,
+    }
+
+    s.data[s.nextID] = product
+    s.nextID++
+    return product, nil
+}
+
+func (s *inMemoryProductService) GetProduct(id uint) (*domain.Product, error) {
+    product, ok := s.data[id]
+    if !ok {
+        return nil, errors.New("product not found")
+    }
+    return product, nil
+}
+
+func (s *inMemoryProductService) GetProducts(limit, offset int) ([]*domain.Product, error) {
+    var products []*domain.Product
+    skipped := 0
+    for _, product := range s.data {
+        if skipped < offset {
+            skipped++
+            continue
+        }
+        if limit > 0 && len(products) >= limit {
+            break
+        }
+        products = append(products, product)
+    }
+    return products, nil
+}
+
+func (s *inMemoryProductService) UpdateProduct(id uint, req *domain.UpdateProductRequest) (*domain.Product, error) {
+    product, ok := s.data[id]
+    if !ok {
+        return nil, errors.New("product not found")
+    }
+    if req.Name != nil {
+        product.Name = *req.Name
+    }
+    if req.Description != nil {
+        product.Description = *req.Description
+    }
+    if req.Price != nil {
+        product.Price = *req.Price
+    }
+    if req.CategoryID != nil {
+        product.CategoryID = *req.CategoryID
+    }
+    return product, nil
+}
+
+func (s *inMemoryProductService) DeleteProduct(id uint) error {
+    if _, ok := s.data[id]; !ok {
+        return errors.New("product not found")
+    }
+    delete(s.data, id)
+    return nil
+}
+
+func (s *inMemoryProductService) GetProductsByCategory(categoryID uint, limit, offset int) ([]*domain.Product, error) {
+    var products []*domain.Product
+    skipped := 0
+    for _, product := range s.data {
+        if product.CategoryID != categoryID {
+            continue
+        }
+        if skipped < offset {
+            skipped++
+            continue
+        }
+        if limit > 0 && len(products) >= limit {
+            break
+        }
+        products = append(products, product)
+    }
+    return products, nil
+}
 
 func setupTestRouter() *gin.Engine {
     gin.SetMode(gin.TestMode)
     
-    // Use mock services
-    productService := mock.NewMockProductService()
+    productService := newInMemoryProductService()
     productHandler := handler.NewProductHandler(productService)
     
     r := gin.New()
@@ -878,9 +834,9 @@ func TestGetProducts_API(t *testing.T) {
    - เพิ่ม Swagger comments
    - เขียน integration tests
 
-7. **สร้าง Mock**
-   - เขียน `internal/mock/product_service.go`
-   - เพื่อใช้ใน development mode
+7. **เชื่อมต่อ Dependencies**
+    - อัปเดต `cmd/server/main.go` ให้สร้าง repository/service ใหม่
+    - ตรวจสอบ `.env` ให้มีค่า database และ redis ที่ถูกต้อง
 
 8. **ทดสอบ**
    ```bash
@@ -1129,9 +1085,6 @@ REDIS_PASSWORD=
 
 # JWT
 JWT_SECRET=your-super-secret-key
-
-# ปิด Mock Mode
-MOCK_MODE=false
 ```
 
 ### 6. 🔧 Best Practices และ Guidelines
@@ -1383,14 +1336,14 @@ var (
 2. **ง่ายต่อการ Test** - ใช้ dependency injection และ mocking
 3. **Maintainable** - เปลี่ยนแปลง implementation ได้ง่าย
 4. **Scalable** - เพิ่ม features ใหม่ได้โดยไม่กระทบของเก่า
-5. **Developer Friendly** - มี hot reload, auto swagger, mock mode
+5. **Developer Friendly** - มี hot reload, auto swagger, และ tooling พร้อมใช้งาน
 
 **เครื่องมือสำคัญ:**
 - `dev.bat` / `make dev` - Development mode พร้อม hot reload
 - `build.bat` / `make build` - Production build
 - `test.bat` / `make test` - รัน tests
 - Swagger UI - API documentation
-- Mock Mode - Development โดยไม่ต้องมี database
+- Docker / docker-compose - รันบริการเสริม (PostgreSQL, Redis)
 
 **Workflow:**
 1. Design Domain Entity
@@ -1399,7 +1352,7 @@ var (
 4. Implement Service  
 5. Create Handler
 6. Add Routes
-7. Create Mock
+7. Wire Dependencies
 8. Write Tests
 9. Generate Swagger
 10. Deploy

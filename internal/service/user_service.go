@@ -9,18 +9,12 @@ import (
 
 	"go-template-structure/internal/config"
 	"go-template-structure/internal/domain"
+	"go-template-structure/internal/interfaces"
 	"go-template-structure/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
-
-// RedisInterface defines methods for Redis operations
-type RedisInterface interface {
-	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
-	Get(ctx context.Context, key string) (string, error)
-	Del(ctx context.Context, keys ...string) error
-}
 
 type UserService interface {
 	CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
@@ -34,20 +28,14 @@ type UserService interface {
 
 type userService struct {
 	userRepo    repository.UserRepository
-	redisClient RedisInterface // ใช้ interface แทน
+	redisClient interfaces.RedisInterface
 	jwtConfig   config.JWTConfig
 }
 
-func NewUserService(userRepo repository.UserRepository, redisClient interface{}, jwtConfig config.JWTConfig) UserService {
-	// Type assertion เพื่อให้ใช้ interface ได้
-	var redisInterface RedisInterface
-	if client, ok := redisClient.(RedisInterface); ok {
-		redisInterface = client
-	}
-
+func NewUserService(userRepo repository.UserRepository, redisClient interfaces.RedisInterface, jwtConfig config.JWTConfig) UserService {
 	return &userService{
 		userRepo:    userRepo,
-		redisClient: redisInterface,
+		redisClient: redisClient,
 		jwtConfig:   jwtConfig,
 	}
 }

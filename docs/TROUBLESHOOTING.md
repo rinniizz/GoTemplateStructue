@@ -34,21 +34,18 @@ SERVER_PORT=8081
 **Error:** `Failed to connect to database`
 
 **วิธีแก้:**
-1. ใช้ Mock Mode แทน:
-   ```bash
-   set MOCK_MODE=true
-   go run cmd/server/main.go
-   ```
-
-2. หรือติดตั้ง PostgreSQL และแก้ไขไฟล์ `.env`
+1. ตรวจสอบว่า PostgreSQL กำลังรันอยู่ และค่าตรงกับ `.env`
+2. ลองเชื่อมต่อด้วย `psql` หรือ GUI เพื่อยืนยันว่าเข้าถึงได้
+3. รัน `go run cmd/server/main.go` หลังจากแก้ไขข้อมูลการเชื่อมต่อ
 
 ### 4. Redis Connection Failed
 
 **Error:** `Failed to connect to Redis`
 
 **วิธีแก้:**
-1. ใช้ Mock Mode (จะใช้ Memory Cache แทน)
-2. หรือติดตั้ง Redis และแก้ไขไฟล์ `.env`
+1. ตรวจสอบว่า Redis กำลังรันอยู่และ port ถูกต้อง
+2. ใช้ `redis-cli ping` เพื่อตรวจสอบการเชื่อมต่อ
+3. อัปเดตค่าใน `.env` ให้ตรงกับเซิร์ฟเวอร์จริง แล้ว restart service
 
 ### 5. Go Module Error
 
@@ -179,9 +176,8 @@ docker-compose logs -f app
 
 1. ✅ ตรวจสอบ Go version (ต้อง 1.21+)
 2. ✅ รัน `go mod tidy`
-3. ✅ ลองใช้ Mock Mode
-4. ✅ ตรวจสอบไฟล์ `.env`
-5. ✅ ดู error message ให้ละเอียด
+3. ✅ ตรวจสอบไฟล์ `.env`
+4. ✅ ดู error message ให้ละเอียด
 
 ### สร้าง Issue Report
 เมื่อสร้าง issue ให้ใส่ข้อมูลนี้:

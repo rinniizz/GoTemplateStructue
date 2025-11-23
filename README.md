@@ -16,7 +16,6 @@ make dev
 **คุณสมบัติที่ได้:**
 - 🔥 Hot reload อัตโนมัติเมื่อแก้ไขไฟล์ (Air)
 - � Auto-generate Swagger docs ทุกครั้งที่รัน
-- �🔧 Mock mode (ไม่ต้องติดตั้ง Database)
 - 🐛 Debug logging enabled
 - 📍 Server: http://localhost:8080
 - 📖 Swagger UI: http://localhost:8080/swagger/index.html
@@ -53,9 +52,7 @@ make build
 - `make dev` - 🔥 Development Mode พร้อม Air Hot Reload + Auto Swagger
 - `make build` - 🔨 สร้าง Production Binary พร้อม Auto Swagger
 - `make test` - 🧪 รันเทสต์
-- `make lint` - ตรวจสอบ code quality
-- `make swagger` - สร้าง swagger docs
-- `make clean` - ลบไฟล์ที่ไม่จำเป็น ที่รวม Best Practices ทั้งหมด
+- `make clean` - ลบไฟล์ build artifacts
 
 ## 🏗️ โครงสร้างโปรเจกต์
 
@@ -70,7 +67,6 @@ make build
 │   ├── service/          # Business logic
 │   ├── handler/          # HTTP handlers
 │   ├── middleware/       # HTTP middlewares
-│   ├── mock/             # Mock implementations
 │   └── interfaces/       # Interface definitions
 ├── pkg/                   # Public libraries
 │   ├── utils/            # Utility functions
@@ -82,7 +78,6 @@ make build
 │   ├── swagger.yaml      # Swagger YAML schema
 │   ├── SWAGGER_GUIDE.md  # Swagger documentation guide
 │   ├── TROUBLESHOOTING.md # Troubleshooting guide
-│   ├── MOCK_MODE.md      # Mock mode documentation
 │   └── DEVELOPMENT.md    # Development guide
 ├── test/                  # Test files
 ├── bin/                   # Build output (ignored by git)
@@ -109,7 +104,6 @@ make build
 - ✅ Unit Testing
 - ✅ Docker Support
 - ✅ Hot Reload Development (Air)
-- ✅ Mock Mode (ไม่ต้องมี Database)
 - ✅ Graceful Shutdown
 
 ## 📚 Auto Swagger Documentation
@@ -140,34 +134,21 @@ func (h *Handler) GetUsers(c *gin.Context) {
 }
 ```
 
-## 🔧 Mock Mode
-
-โปรเจกต์นี้รองรับ **Mock Mode** ที่ไม่ต้องติดตั้ง Database:
-- `dev.bat` และ `make dev` จะเปิด Mock Mode อัตโนมัติ
-- Mock Mode จะใช้ในหน่วยข้อมูลแทน Database จริง
-- เหมาะสำหรับการพัฒนาและทดสอบ
-
-## 🐳 Production Deployment
+## 🚀 Production Deployment
 
 ### Docker (แนะนำ)
 ```bash
 docker-compose up -d
 ```
 
-### Manual (ต้องติดตั้ง PostgreSQL และ Redis ก่อน)
+### Manual
 ```bash
 # Copy environment file
 cp .env.example .env
 
 # Edit .env with your database settings
 # Then run:
-make run    # Linux/Mac
-# หรือ
-go run cmd/server/main.go  # Windows
-```
-
-## 🧪 ทดสอบ API
-make run           # Linux/Mac
+go run cmd/server/main.go
 ```
 
 ### 🧪 ทดสอบ API
@@ -178,7 +159,7 @@ make run           # Linux/Mac
 # ตรวจสอบสถานะ
 curl http://localhost:8080/health
 
-# เข้าสู่ระบบ (Mock Mode)
+# เข้าสู่ระบบ
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"password123"}'
@@ -209,23 +190,16 @@ go mod download
 cp .env.example .env
 ```
 
-###  Development Features:
-- **Hot Reload**: เปลี่ยนไฟล์แล้ว restart อัตโนมัติ (Air)
-- **Mock Mode**: ไม่ต้องมี database
-- **Debug Logging**: ข้อมูล log ละเอียด
-- **Auto Swagger**: generate swagger docs อัตโนมัติ
-- **CORS Enabled**: เรียก API จาก frontend ได้
-
-## 🛠️ การใช้งาน
+## 🛠️ การเริ่มต้นใช้งาน
 
 ### Prerequisites
 - Go 1.21+
-- PostgreSQL (สำหรับโหมดจริง)
-- Redis (สำหรับโหมดจริง)
+- PostgreSQL
+- Redis
 
 ### Installation
 
-1. Clone the repository:
+1. Clone repository:
 ```bash
 git clone <repository-url>
 cd go-template-structure
@@ -236,124 +210,31 @@ cd go-template-structure
 go mod download
 ```
 
-3. Copy environment file:
+3. Setup environment:
 ```bash
 cp .env.example .env
+# แก้ไข .env ให้ตรงกับ database settings ของคุณ
 ```
 
-### 🚀 วิธีการรัน
-
-#### วิธีที่ 1: รันแบบ Development (แนะนำ)
+4. รันโปรเจกต์:
 ```bash
-# Windows
-dev.bat
+# Development mode (แนะนำ)
+dev.bat      # Windows
+make dev     # Linux/Mac
 
-# Linux/Mac
-make dev
+# Production build
+build.bat    # Windows
+make build   # Linux/Mac
 ```
 
-#### วิธีที่ 2: รันแบบ Production
-```bash
-# สร้าง binary ก่อน
-build.bat  # Windows
-make build # Linux/Mac
+## 📖 API Documentation
 
-# รัน binary
-bin/gotemplate.exe  # Windows
-./bin/gotemplate    # Linux/Mac
-```
-```
-
-**Linux/Mac:**
-```bash
-# ติดตั้ง swag CLI (ครั้งเดียว)
-go install github.com/swaggo/swag/cmd/swag@latest
-
-# Generate swagger docs
-swag init -g cmd/server/main.go --output docs --parseDependency --parseInternal
-
-# หรือใช้ Makefile
-make swagger
-```
-
-### 📖 เข้าถึง Swagger UI
-
-เมื่อเซิร์ฟเวอร์รันแล้ว สามารถเข้าถึง Swagger UI ได้ที่:
+เมื่อรันเซิร์ฟเวอร์แล้ว เข้าถึง API docs ได้ที่:
 - **Swagger UI:** http://localhost:8080/swagger/index.html
-- **JSON Schema:** http://localhost:8080/swagger/doc.json
+- **Health Check:** http://localhost:8080/health
 
-### 🚀 Quick Start พร้อม Swagger
+## 📚 เอกสารเพิ่มเติม
 
-**วิธีที่ 1: ใช้ batch script (Windows)**
-```bash
-# รัน generate swagger และเริ่มเซิร์ฟเวอร์พร้อมกัน
-run-with-swagger.bat
-```
-
-**วิธีที่ 2: Manual steps**
-```bash
-# 1. Generate swagger documentation
-generate-swagger.bat
-
-# 2. รันเซิร์ฟเวอร์ (Mock Mode)
-run-mock.bat
-
-# 3. เปิดบราวเซอร์ไปที่ http://localhost:8080/swagger/index.html
-```
-
-### ✨ API Endpoints (Auto-Generated)
-
-Swagger UI จะแสดง API endpoints ทั้งหมดที่ถูก generate อัตโนมัติจาก code:
-
-- **Authentication:**
-  - `POST /api/v1/auth/register` - ลงทะเบียนผู้ใช้ใหม่
-  - `POST /api/v1/auth/login` - เข้าสู่ระบบ
-  - `POST /api/v1/auth/refresh` - รีเฟรช token
-
-- **User Management:** (ต้อง authentication)
-  - `GET /api/v1/users/profile` - ดูโปรไฟล์ตนเอง
-  - `PUT /api/v1/users/profile` - แก้ไขโปรไฟล์ตนเอง
-  - `GET /api/v1/users` - ดูรายชื่อผู้ใช้ทั้งหมด (พร้อม pagination)
-  - `GET /api/v1/users/:id` - ดูข้อมูลผู้ใช้ตาม ID
-  - `PUT /api/v1/users/:id` - แก้ไขข้อมูลผู้ใช้ตาม ID
-  - `DELETE /api/v1/users/:id` - ลบผู้ใช้ตาม ID
-
-- **System:**
-  - `GET /health` - ตรวจสอบสถานะระบบ
-
-**หมายเหตุ:** ข้อมูลทั้งหมดใน Swagger UI ถูก generate อัตโนมัติจาก swagger comments ใน source code
-
-## 🧪 Testing
-
-```bash
-make test
-```
-
-## 📦 Build
-
-```bash
-make build
-```
-
-## 🔧 Available Commands
-
-### Windows Batch Scripts
-- `run-dev.bat` - 🔥 **Development Mode พร้อม Air Hot Reload (แนะนำ)**
-- `run-with-swagger.bat` - � รันพร้อม Generate Swagger
-- `run-dev-simple.bat` - 🛠️ Development Mode แบบง่าย (ไม่มี hot reload)
-- `run-mock.bat` - 🔧 รันแบบ Mock Mode
-- `run-production.bat` - 🏭 รันแบบ Production Mode
-- `test-build.bat` - 🧪 ทดสอบการ Build
-- `generate-swagger.bat` - 📚 Generate Swagger เท่านั้น
-- `test-api.bat` - 🧪 ทดสอบ API endpoints ด้วย curl
-
-### Makefile Commands (Linux/Mac)
-- `make dev` - 🔥 **Development Mode พร้อม Air Hot Reload (แนะนำ)**
-- `make dev-simple` - 🛠️ Development Mode แบบง่าย (ไม่มี hot reload)
-- `make run` - รันเซิร์ฟเวอร์
-- `make mock` - รันแบบ Mock Mode
-- `make build` - สร้าง binary
-- `make test` - รันเทส
-- `make lint` - ตรวจสอบ code quality
-- `make swagger` - สร้าง swagger docs
-- `make clean` - ลบไฟล์ที่ไม่จำเป็น
+- [คู่มือพัฒนา (Development Guide)](docs/DEVELOPMENT.md)
+- [คู่มือแก้ปัญหา (Troubleshooting)](docs/TROUBLESHOOTING.md)
+- [คู่มือ Swagger](docs/SWAGGER_GUIDE.md)

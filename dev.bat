@@ -38,7 +38,6 @@ echo 💡 Press Ctrl+C to stop
 echo.
 
 REM Set development environment
-set MOCK_MODE=true
 set GIN_MODE=debug
 set SERVER_PORT=8080
 set LOG_LEVEL=debug
@@ -55,7 +54,6 @@ echo 📍 Server: http://localhost:8080
 echo 📚 Swagger UI: http://localhost:8080/swagger/index.html
 echo.
 
-set MOCK_MODE=true
 set GIN_MODE=debug
 set SERVER_PORT=8080
 set LOG_LEVEL=debug

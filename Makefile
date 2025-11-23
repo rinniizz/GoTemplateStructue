@@ -59,14 +59,14 @@ dev:
 		echo "🏥 Health Check: http://localhost:8080/health"; \
 		echo "🔄 Auto-restart enabled - changes will trigger rebuild"; \
 		echo "💡 Press Ctrl+C to stop"; \
-		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug air; \
+		GIN_MODE=debug LOG_LEVEL=debug air; \
 	elif command -v nodemon >/dev/null 2>&1; then \
 		echo "🔄 Using nodemon for file watching..."; \
 		echo "🚀 Starting server with File Watching..."; \
 		echo "📍 Server: http://localhost:8080"; \
 		echo "📚 Swagger UI: http://localhost:8080/swagger/index.html"; \
 		echo "🏥 Health Check: http://localhost:8080/health"; \
-		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug nodemon --exec "go run cmd/server/main.go" --ext go --watch cmd --watch internal --watch pkg --delay 2; \
+		GIN_MODE=debug LOG_LEVEL=debug nodemon --exec "go run cmd/server/main.go" --ext go --watch cmd --watch internal --watch pkg --delay 2; \
 	else \
 		echo "⚠️  No hot reload tool found. Installing Air..."; \
 		go install github.com/cosmtrek/air@latest; \
@@ -76,18 +76,8 @@ dev:
 		echo "📍 Server: http://localhost:8080"; \
 		echo "📚 Swagger UI: http://localhost:8080/swagger/index.html"; \
 		echo "🏥 Health Check: http://localhost:8080/health"; \
-		MOCK_MODE=true GIN_MODE=debug LOG_LEVEL=debug go run $(MAIN_PATH)/main.go; \
+		GIN_MODE=debug LOG_LEVEL=debug go run $(MAIN_PATH)/main.go; \
 	fi
-
-# Run in mock mode (no database required)
-mock:
-	@echo "🔧 Starting in mock mode - no database required..."
-	MOCK_MODE=true go run $(MAIN_PATH)/main.go
-
-# Run in mock mode for Windows
-mock-win:
-	@echo "🔧 Starting in mock mode - no database required..."
-	set MOCK_MODE=true && go run $(MAIN_PATH)/main.go
 
 # Build the application
 build:
@@ -172,7 +162,6 @@ docker-stop:
 help:
 	@echo "Available commands:"
 	@echo "  run          - Run the application"
-	@echo "  mock         - Run in mock mode (no database)"
 	@echo "  dev          - Run with hot reload (Air)"
 	@echo "  build        - Build the application"
 	@echo "  test         - Run tests"
